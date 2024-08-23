@@ -17,7 +17,7 @@ you can receive customized meal plans that help you manage your blood sugar leve
 st.sidebar.header("Patient Information")
 
 # Retrieve the API key from the secrets file
-api_key = st.secrets["general"]["api_key"]
+api_key = st.secrets["claude"]["api_key"]
 
 # Input fields for sugar levels and dietary preferences
 fasting_sugar = st.sidebar.number_input("Fasting Sugar Level (mg/dL)", min_value=0)
