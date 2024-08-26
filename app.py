@@ -1,7 +1,47 @@
 import streamlit as st
 import anthropic
+import dotenv
+import os
 
-api_key = st.secrets["claude_api_key"]
+# Load environment variables from .env file
+dotenv.load_dotenv()
+
+
+# Retrieve the API key from the environment variable
+api_key = os.getenv("claude_api_key")
+
+# Function to generate a meal plan using Claude AI
+def generate_meal_plan(api_key, fasting, pre_meal, post_meal, preferences):
+    # Initialize the Anthropics API client
+    client = anthropic.Anthropic(api_key=api_key)
+
+    # Create the system and user messages
+    prompt = (
+        f"My Fasting Sugar Level is {fasting} mg/dL, "
+        f"my Pre-Meal Sugar Level is {pre_meal} mg/dL, "
+        f"and my Post-Meal Sugar Level is {post_meal} mg/dL, "
+        f"My Dietary Preferences are {dietary_preferences}. "
+        "Please provide a personalized meal plan that can help my blood sugar levels effectively."
+        )
+
+    # Call the Claude AI model using the messages API
+    response = client.messages.create(
+        model="claude-3-5-sonnet-20240620",
+        max_tokens=250,
+        temperature=0.7,
+        system="You are a world-class nutritionist who specializes in diabets mangement.",
+        messages=[
+            {
+                "role": "user",
+                "content": prompt 
+            }
+        ]
+    )
+
+    # Extract the content from the list of messages
+    raw_content = response.content
+    itinerary = raw_content[0].text
+    return itinerary
 
 # Title of the app
 st.title("GlucoGuide")
@@ -12,12 +52,8 @@ st.write("""
 By entering your fasting, pre-meal, and post-meal sugar levels, along with your dietary preferences,
 you can receive customized meal plans that help you manage your blood sugar levels effectively.
 """)
-
 # Sidebar for inputs
 st.sidebar.header("Patient Information")
-
-# Retrieve the API key from the secrets file
-api_key = st.secrets["claude"]["api_key"]
 
 # Input fields for sugar levels and dietary preferences
 fasting_sugar = st.sidebar.number_input("Fasting Sugar Level (mg/dL)", min_value=0)
@@ -25,46 +61,13 @@ pre_meal_sugar = st.sidebar.number_input("Pre-Meal Sugar Level (mg/dL)", min_val
 post_meal_sugar = st.sidebar.number_input("Post-Meal Sugar Level (mg/dL)", min_value=0)
 
 # Dietary preferences as a multiselect option
-dietary_preferences = st.sidebar.multiselect(
-    "Dietary Preferences",
-    ["Low Carb", "Low Sugar", "Vegetarian", "Vegan", "Gluten-Free", "Dairy-Free"]
-)
+dietary_preferences = st.sidebar.text_input("Dietary Preferences (mg/dL) (e.g., vegetarian, low-carb)")
 
-# Function to generate a meal plan using Claude AI
-def generate_meal_plan(api_key, fasting, pre_meal, post_meal, preferences):
-    # Initialize the Anthropics API client
-    client = anthropic.Anthropic(api_key=api_key)
-
-    # Create the prompt
-    prompt = (
-        f"Create a customized meal plan for a diabetic patient with the following details:\n"
-        f"- Fasting Sugar Level: {fasting} mg/dL\n"
-        f"- Pre-Meal Sugar Level: {pre_meal} mg/dL\n"
-        f"- Post-Meal Sugar Level: {post_meal} mg/dL\n"
-        f"- Dietary Preferences: {', '.join(preferences)}\n"
-        f"Provide a meal plan that considers these sugar levels and dietary preferences."
-    )
-
-    # Call the Claude AI model
-    message = client.completions.create(
-        model="claude-3-5-sonnet-20240620",  # Model version to be used
-        max_tokens=1000,
-        temperature=0,  # Low temperature for more deterministic results
-        prompt=prompt
-    )
-
-    # Extract the meal plan from the response
-    meal_plan = message.get('completion', 'Sorry, there was an error generating your meal plan. Please try again.')
-    
-    # Extract only the required text from the response
-    return meal_plan.strip()
-
-# Main area to display the customized meal plan
-st.header("Your Customized Meal Plan")
-
-# Generate the meal plan using the API key from the secrets file
-meal_plan = generate_meal_plan(api_key, fasting_sugar, pre_meal_sugar, post_meal_sugar, dietary_preferences)
-st.write(meal_plan)
+# Display the meal plan in a nicely formatted way
+if st.sidebar.button("Generate Meal Plan"):    
+    meal_plan = generate_meal_plan(api_key, fasting_sugar, pre_meal_sugar, post_meal_sugar, dietary_preferences)
+    st.write("Based on your sugar level and dietary preferences, here is your personalized meal plan:")
+    st.markdown(meal_plan)
  
 
 
